@@ -1,0 +1,9 @@
+libraries -
+pygame - for providing an engine to build this game with
+friends -
+clove and kleen - for bullying me into enjoying teto's music
+teto -
+kasane teto - for being a diva
+team TWINDRILL
+music -
+ochame kinou - lamazeP
