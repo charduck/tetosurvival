@@ -145,13 +145,13 @@ story_dialogue = {
         "Neru: \"Teto! Can you hear me?\"",
         "Neru: \"I don't know what happened, but...\"",
         "Neru: \"Miku went crazy! Have you seen her?\"",
-        "Miku: \"Leek....\""
+        "Miku: \"...\""
     ],
     10: [
-        "Neru: \"Hey Teto! Take this!\"",
-        "Neru: \"It's a multi-baguette launcher!\"",
+        "Neru: \"Teto!!\"",
+        "Neru: \"Here, take my baguette-shotgun!\"",
         "Neru: \"Press Q to switch weapons!\"",
-        "Neru: \"Good luck out there!\""
+        "Neru: \"Stay safe!\""
     ],
     15: [
         "Teto: \"The baguette launcher works great!\"",
@@ -719,6 +719,8 @@ def spawn_wave():
 def continue_after_dialogue():
     """Continue with wave spawning after dialogue finishes."""
     global wave_count
+
+    wave_count += 1
     
     # Now spawn the actual wave
     if wave_count >= 40 and wave_count % 10 == 0 and not boss_active:
@@ -839,7 +841,7 @@ while running:
             if finished:
                 continue_after_dialogue()
         elif event.type == pg.KEYDOWN:
-            if event.key == pg.K_q or pg.K_SPACE:
+            if event.key == pg.K_q:
                 switch_weapon()
 
     clock.tick()
@@ -882,18 +884,11 @@ while running:
     # throw baguette on m1
     if pg.mouse.get_pressed()[0]:
         current_time = t.time()
-        if current_time - last_throw_time >= throw_cooldown:
+        stats = get_current_weapon_stats()
+        if current_time - last_throw_time >= stats["cooldown"]:
             last_throw_time = current_time
-            # baguette thrown as proj
-            dx = math.cos(angle) * proj_speed
-            dy = math.sin(angle) * proj_speed
-            thrown_baguettes.append({
-                "x": player_x + player_size // 2,
-                "y": player_y + player_size // 2,
-                "dx": dx,
-                "dy": dy,
-                "life": proj_lifetime
-            })
+            new_projectiles = fire_weapon(angle, player_x + player_size // 2, player_y + player_size // 2)
+            thrown_baguettes.extend(new_projectiles)
 
     # draw thrown baguettes as proj
     for baguette in thrown_baguettes[:]:
@@ -951,10 +946,13 @@ while running:
     score_text = font.render(f"Score: {score}", True, white)
     wave_text = font.render(f"Wave: {wave_count}", True, white)
     fps_text = font.render(f"FPS: {fps_count}", True, white)
+    weapon_text = font.render(f"Weapon: {current_weapon.upper()}", True, white)
     virtual_surface.blit(hp_text, (10, 10))
     virtual_surface.blit(score_text, (10, 60))
     virtual_surface.blit(wave_text, (10, 110))
     virtual_surface.blit(fps_text, (10, 160))
+    virtual_surface.blit(weapon_text, (10, 210))
+
 
     if story_active:
         draw_dialogue()
