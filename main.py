@@ -141,10 +141,11 @@ waiting_for_click = False
 
 # Story dialogue data
 story_dialogue = {
-    5: [
-        "Teto: \"Miku-chan is getting stronger...\"",
-        "Teto: \"I need to be more careful.\"",
-        "Teto: \"But I won't give up!\""
+    2: [
+        "Neru: \"Teto! Can you hear me?\"",
+        "Neru: \"I don't know what happened, but...\"",
+        "Neru: \"Miku went crazy! Have you seen her?\"",
+        "Miku: \"Leek....\""
     ],
     10: [
         "Neru: \"Hey Teto! Take this!\"",
@@ -196,15 +197,15 @@ weapon_unlocked_shotgun = False
 
 # Weapon stats
 weapon_stats = {
-    WEAPON_SINGLE: {
+    "single": {
         "projectile_count": 1,
         "spread_angle": 0,
-        "cooldown": 1.0
+        "cooldown": 1.0,
     },
-    WEAPON_SHOTGUN: {
+    "shotgun": {
         "projectile_count": 5,
-        "spread_angle": 0.5,
-        "cooldown": 1.5
+        "spread_angle": 1,
+        "cooldown": 1.5,
     }
 }
 
@@ -221,6 +222,7 @@ player_x = VIRTUAL_WIDTH // 2 - player_size // 2
 player_y = VIRTUAL_HEIGHT // 2 - player_size // 2
 player_speed = 2
 player_hp = 100
+
 
 # baguette settings
 baguette_length = 60
@@ -832,20 +834,28 @@ while running:
         elif event.type == pg.VIDEORESIZE:
             screen_width, screen_height = event.w, event.h
             screen = pg.display.set_mode((screen_width, screen_height), pg.RESIZABLE)
+        elif event.type == pg.MOUSEBUTTONDOWN and story_active:
+            finished = handle_dialogue_click()
+            if finished:
+                continue_after_dialogue()
+        elif event.type == pg.KEYDOWN:
+            if event.key == pg.K_q or pg.K_SPACE:
+                switch_weapon()
 
     clock.tick()
     fps = clock.get_fps()
     fps_count = show_fps(fps)
 
-    keys = pg.key.get_pressed()  # wasd keypresses
-    if keys[pg.K_a]:
-        map_offset_x += player_speed
-    if keys[pg.K_d]:
-        map_offset_x -= player_speed
-    if keys[pg.K_w]:
-        map_offset_y += player_speed
-    if keys[pg.K_s]:
-        map_offset_y -= player_speed
+    if not story_active:
+        keys = pg.key.get_pressed()  # wasd keypresses
+        if keys[pg.K_a]:
+            map_offset_x += player_speed
+        if keys[pg.K_d]:
+            map_offset_x -= player_speed
+        if keys[pg.K_w]:
+            map_offset_y += player_speed
+        if keys[pg.K_s]:
+            map_offset_y -= player_speed
 
     virtual_surface.fill(blue)  # screen bg
 
@@ -870,20 +880,13 @@ while running:
         virtual_surface.blit(rotated_baguette, (end_x - 40, end_y - 40))
 
     # throw baguette on m1
-    if pg.mouse.get_pressed()[0]:
+    if pg.mouse.get_pressed()[0] and not story_active:
         current_time = t.time()
-        if current_time - last_throw_time >= throw_cooldown:
+        stats = get_current_weapon_stats()
+        if current_time - last_throw_time >= stats["cooldown"]:
             last_throw_time = current_time
-            # baguette thrown as proj
-            dx = math.cos(angle) * proj_speed
-            dy = math.sin(angle) * proj_speed
-            thrown_baguettes.append({
-                "x": player_x + player_size // 2,
-                "y": player_y + player_size // 2,
-                "dx": dx,
-                "dy": dy,
-                "life": proj_lifetime
-            })
+            new_projectiles = fire_weapon(angle, player_x + player_size // 2, player_y + player_size // 2)
+    thrown_baguettes.extend(new_projectiles)
 
     # draw thrown baguettes as proj
     for baguette in thrown_baguettes[:]:
@@ -906,27 +909,31 @@ while running:
                     thrown_baguettes.remove(baguette)
                 score += 2
 
-    # update enemy pos
-    for enemy in enemies[:]:
-        enemy_dx = player_x - enemy["x"] - map_offset_x
-        enemy_dy = player_y - enemy["y"] - map_offset_y
-        enemy_angle = math.atan2(enemy_dy, enemy_dx)
-        enemy["x"] += math.cos(enemy_angle) * enemy_speed
-        enemy["y"] += math.sin(enemy_angle) * enemy_speed
+    if not story_active:
+        for enemy in enemies[:]:
+            enemy_dx = player_x - enemy["x"] - map_offset_x
+            enemy_dy = player_y - enemy["y"] - map_offset_y
+            enemy_angle = math.atan2(enemy_dy, enemy_dx)
+            enemy["x"] += math.cos(enemy_angle) * enemy_speed
+            enemy["y"] += math.sin(enemy_angle) * enemy_speed
 
-        # check if enemy collides with player
-        if check_player_collision({"x": player_x, "y": player_y}, enemy):
-            player_hp -= 10
-            enemies.remove(enemy)
-            if player_hp <= 0:
-                death_screen()
+            # check if enemy collides with player
+            if check_player_collision({"x": player_x, "y": player_y}, enemy):
+                player_hp -= 10
+                enemies.remove(enemy)
+                if player_hp <= 0:
+                    death_screen()
 
-        # draw enemies
-        virtual_surface.blit(miku_image, (enemy["x"] + map_offset_x, enemy["y"] + map_offset_y))
+            # draw enemies
+            virtual_surface.blit(miku_image, (enemy["x"] + map_offset_x, enemy["y"] + map_offset_y))
 
     # when enemies all dead, spawn a new wave
-    if not enemies:
-        spawn_wave()
+    if not enemies and not story_active and not boss_active:
+        next_wave = wave_count + 1
+        if next_wave in story_dialogue:
+            start_story_sequence(next_wave)
+        else:
+            spawn_wave()
 
     # draw player
     virtual_surface.blit(teto_image, (player_x, player_y))
@@ -942,6 +949,8 @@ while running:
     virtual_surface.blit(wave_text, (10, 110))
     virtual_surface.blit(fps_text, (10, 160))
 
+    if story_active:
+        draw_dialogue()
     scaled_surface = pg.transform.scale(virtual_surface, (screen_width, screen_height))
     screen.blit(scaled_surface, (0, 0))
     pg.display.flip()
