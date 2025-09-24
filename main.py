@@ -197,12 +197,12 @@ weapon_unlocked_shotgun = False
 
 # Weapon stats
 weapon_stats = {
-    "single": {
+    WEAPON_SINGLE: {
         "projectile_count": 1,
         "spread_angle": 0,
         "cooldown": 1.0,
     },
-    "shotgun": {
+    WEAPON_SHOTGUN: {
         "projectile_count": 5,
         "spread_angle": 1,
         "cooldown": 1.5,
@@ -389,10 +389,10 @@ def fire_weapon(angle, start_x, start_y):
     """Fire the current weapon and return projectiles to add."""
     stats = get_current_weapon_stats()
     projectiles = []
-    
+
     count = stats["projectile_count"]
     spread = stats["spread_angle"]
-    
+
     for i in range(count):
         if count == 1:
             # Single shot
@@ -401,10 +401,10 @@ def fire_weapon(angle, start_x, start_y):
             # Multiple shots with spread
             offset = (i - (count - 1) / 2) * spread
             proj_angle = angle + offset
-        
+
         dx = math.cos(proj_angle) * proj_speed
         dy = math.sin(proj_angle) * proj_speed
-        
+
         projectiles.append({
             "x": start_x,
             "y": start_y,
@@ -412,7 +412,7 @@ def fire_weapon(angle, start_x, start_y):
             "dy": dy,
             "life": proj_lifetime
         })
-    
+
     return projectiles
 
 # ----------- BOSS FUNCTIONS ----------- #
@@ -880,13 +880,20 @@ while running:
         virtual_surface.blit(rotated_baguette, (end_x - 40, end_y - 40))
 
     # throw baguette on m1
-    if pg.mouse.get_pressed()[0] and not story_active:
+    if pg.mouse.get_pressed()[0]:
         current_time = t.time()
-        stats = get_current_weapon_stats()
-        if current_time - last_throw_time >= stats["cooldown"]:
+        if current_time - last_throw_time >= throw_cooldown:
             last_throw_time = current_time
-            new_projectiles = fire_weapon(angle, player_x + player_size // 2, player_y + player_size // 2)
-    thrown_baguettes.extend(new_projectiles)
+            # baguette thrown as proj
+            dx = math.cos(angle) * proj_speed
+            dy = math.sin(angle) * proj_speed
+            thrown_baguettes.append({
+                "x": player_x + player_size // 2,
+                "y": player_y + player_size // 2,
+                "dx": dx,
+                "dy": dy,
+                "life": proj_lifetime
+            })
 
     # draw thrown baguettes as proj
     for baguette in thrown_baguettes[:]:
