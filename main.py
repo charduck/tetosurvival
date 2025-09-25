@@ -1,10 +1,8 @@
-"""
-  _       _                         _          _      _              _             _ 
- | |_ ___| |_ ___   ____  _ _ ___ _(_)_ ____ _| |  __| |_  __ _ _ __| |_ ___ _ _  / |
- |  _/ -_)  _/ _ \ (_-< || | '_\ V / \ V / _` | | / _| ' \/ _` | '_ \  _/ -_) '_| | |
-  \__\___|\__\___/ /__/\_,_|_|  \_/|_|\_/\__,_|_| \__|_||_\__,_| .__/\__\___|_|   |_|
-                                                               |_|                   
-"""                                                             
+#    _       _                         _          _      _              _             _ 
+#    | |_ ___| |_ ___   ____  _ _ ___ _(_)_ ____ _| |  __| |_  __ _ _ __| |_ ___ _ _  / |
+#    |  _/ -_)  _/ _ \ (_-< || | '_\ V / \ V / _` | | / _| ' \/ _` | '_ \  _/ -_) '_| | |
+#    \__\___|\__\___/ /__/\_,_|_|  \_/|_|\_/\__,_|_| \__|_||_\__,_| .__/\__\___|_|   |_|
+#                                                                |_|                                                                              
 
 
 try:
@@ -45,6 +43,7 @@ def save_settings(settings):
         json.dump(settings, f)
 
 settings = load_settings()
+
 
 screen = pg.display.set_mode((screen_width, screen_height), pg.RESIZABLE)
 running = True
@@ -92,7 +91,6 @@ def play_next():
         r.shuffle(tracks)
         track_iter = iter(tracks)
         next_track = next(track_iter)
-    print(f"Now playing: {next_track}")
     pg.mixer.music.load(next_track)
     pg.mixer.music.play()
 
@@ -154,44 +152,65 @@ waiting_for_click = False
 # Story dialogue data
 story_dialogue = {
     2: [
+        "Neru: *ring ring*",
         "Neru: \"Teto! Can you hear me?\"",
+        "Neru: \"Finally! Where have you been??\"",
+        "Neru: \"You didn't answer any of my calls!\"",
+        "Neru: \"...That's besides the point now, anyway. Have you seen Miku?\"",
         "Neru: \"I don't know what happened, but...\"",
-        "Neru: \"Miku went crazy! Have you seen her?\"",
-        "Diva: \"...\""
+        "Neru: \"She's acting a little odd right now. I think we should just give her some space...\"",
+        "Neru: *beep*",
+        "Miku: \"...\"",
+        "Miku: \"..!\""
     ],
     10: [
+        "Neru: *ring ring*",
         "Neru: \"Teto!!\"",
-        "Neru: \"Here, take my baguette-shotgun!\"",
+        "Neru: \"I think I left my baguette-shotgun back behind the concert hall!\"",
+        "Neru: \"You're still there, right?\"",
+        "Neru: \"Would you mind bringing it back to me?\"",
+        "Neru: \"I don't mind if you use it if you need to!\"",
         "Neru: \"Press Q to switch weapons!\"",
-        "Neru: \"Stay safe!\""
+        "Neru: \"Stay safe!!\""
+        "Neru: *beep*",
     ],
     15: [
-        "Momo: \"Teto! Teto! Are you ok?\"",
-        "Defoko: \"We're still here, Teto!\""
+        "Neru: *beep*",
+        "Neru: \"Hey Teto! Guess who's with me?\"",
+        "Momo: \"Teto!!!\"",
+        "Defoko: \"We're still here, Teto! Don't worry about us!\"",
+        "Neru: \"I found Momo and Defoko! They're alright, they were just lost!\"",
+        "Defoko: \"Are you nearly back, Teto? What's the hold up?\"",
+        "Momo: *static*"
     ],
     20: [
         "Miku: \"...\"",
+        "Miku: \"Te...\"",
+        "Diva: \"Tet...\"",
         "Miku: \"...\"",
-        "Miku: \"...\""
+        "Diva: \"Teto.\""
     ],
     25: [
         "Teto: \"What is that feeling?\"",
-        "Teto: \"I think something's watching me...\""
+        "Teto: \"Something's watching me...\""
     ],
     30: [
-        "Neru: \"Teto! There's another miku!\"",
+        "Neru: *ring ring*",
+        "Neru: \"Teto! It's me again, Neru!\"",
+        "Neru: \"Something's horribly wrong with Miku!\"",
         "Diva: \"...\"",
-        "Defoko: \"But... it looks different! More... malevolent.\""
+        "Neru: \"I... I don't know what happened, but stay away from her!\"",
+        "Defoko: \"Did you guys hear that too?\"",
+        "Momo: \"Hear what?\"",
+        "Neru: \"Is that?!---\"",
+        "Neru: *beeeeep*"
     ],
     35: [
-        "Teto: \"What is this?\"",
-        "Teto: \"The air feels... suffocating.\""
+        "Teto: \"...The Mikus wont stop coming....\"",
+        "Teto: \"The air feels... suffocating. Even more so than that horde...\""
     ],
     40: [
-        "Miku: \"...\"",
-        "Neru: \"...\"",
-        "Momo: \"...\"",
-        "Defoko: \"...\"",
+        "Diva: *heavy breathing*",
         "Teto: \"!!!\""
     ]
 }
@@ -207,7 +226,7 @@ WEAPON_SHOTGUN = "shotgun"
 
 # Current weapon
 current_weapon = WEAPON_SINGLE
-weapon_unlocked_shotgun = False
+weapon_unlocked_shotgun = True
 
 # Weapon stats
 weapon_stats = {
@@ -249,7 +268,7 @@ throw_cooldown = 1
 # game variables
 enemies = []
 thrown_baguettes = []
-wave_count = 0
+wave_count = 38
 score = 0
 
 # enemy settings
@@ -305,6 +324,8 @@ def start_story_sequence(wave):
             current_npc_sprite = momone_image
         elif "Defoko:" in dialogue:
             current_npc_sprite = defoko_image
+        elif "Diva:" in dialogue:
+            current_npc_sprite = diva_image
         else:
             current_npc_sprite = neru_image
 
@@ -449,12 +470,14 @@ def spawn_boss():
     boss_data = {
         "x": r.randint(-1000, 1000),
         "y": r.randint(-1000, 1000),
-        "hp": 50,
-        "max_hp": 50,
+        "hp": 10,
+        "max_hp": 10,
         "size": 120,  # Larger than normal enemies
         "speed": enemy_speed * 0.7,  # Slower but tankier
         "last_attack_time": 0,
-        "attack_cooldown": 3.0
+        "attack_cooldown": 3.0,
+        "last_player_hit_time": 0,
+        "player_hit_cooldown": 1.0
     }
 
 def update_boss():
@@ -529,22 +552,24 @@ def check_boss_collision(projectile):
         80
         )
     boss_rect = pg.Rect(
-        boss_data["x"],
-        boss_data["y"],
-        boss_data["size"], 
+        boss_data["x"] + map_offset_x,
+        boss_data["y"] + map_offset_y,
+        boss_data["size"],
         boss_data["size"]
     )
+
     
     if proj_rect.colliderect(boss_rect):
         boss_data["hp"] -= 5  # Bosses take more hits
         if boss_data["hp"] <= 0:
-            boss_active = False
+            handle_boss_death()
             return True
         return True
     return False
 
 def check_boss_player_collision():
     """Check if boss collides with player."""
+
     if not boss_active or not boss_data:
         return False
     
@@ -557,6 +582,12 @@ def check_boss_player_collision():
     )
     
     return player_rect.colliderect(boss_rect)
+
+def handle_boss_death():
+    global boss_active
+    boss_active = False
+    victory_screen()
+
 
 # ----------- LOADING UI ----------- #
 
@@ -996,6 +1027,11 @@ while running:
                     thrown_baguettes.remove(baguette)
                 score += 2
 
+        if check_boss_collision(baguette) == True:
+            if baguette in thrown_baguettes:
+                thrown_baguettes.remove(baguette)
+            score += 10
+
     if not story_active:
         for enemy in enemies[:]:
             enemy_dx = player_x - enemy["x"] - map_offset_x
@@ -1028,10 +1064,13 @@ while running:
     if boss_active:
         update_boss()
         draw_boss()
-        check_boss_collision(baguette)
-        check_boss_player_collision()
-    elif boss_data["hp"] <= 0:
-        end_after_boss()
+        if check_boss_player_collision():
+            current_time = t.time()
+            if current_time - boss_data["last_player_hit_time"] >= boss_data["player_hit_cooldown"]:
+                boss_data["last_player_hit_time"] = current_time
+                player_hp -= 20
+
+    end_after_boss()
 
 
     # display player stats
@@ -1045,7 +1084,10 @@ while running:
     virtual_surface.blit(score_text, (10, 60))
     virtual_surface.blit(wave_text, (10, 110))
     virtual_surface.blit(fps_text, (10, 160))
-    virtual_surface.blit(weapon_text, (10, 210))
+    if weapon_unlocked_shotgun == False:
+        pass
+    else:
+        virtual_surface.blit(weapon_text, (10, 210))
 
 
     if story_active:
