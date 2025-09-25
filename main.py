@@ -1,3 +1,12 @@
+"""
+  _       _                         _          _      _              _             _ 
+ | |_ ___| |_ ___   ____  _ _ ___ _(_)_ ____ _| |  __| |_  __ _ _ __| |_ ___ _ _  / |
+ |  _/ -_)  _/ _ \ (_-< || | '_\ V / \ V / _` | | / _| ' \/ _` | '_ \  _/ -_) '_| | |
+  \__\___|\__\___/ /__/\_,_|_|  \_/|_|\_/\__,_|_| \__|_||_\__,_| .__/\__\___|_|   |_|
+                                                               |_|                   
+"""                                                             
+
+
 try:
     import sys
     import pygame as pg # type: ignore
@@ -209,7 +218,7 @@ weapon_stats = {
     },
     WEAPON_SHOTGUN: {
         "projectile_count": 5,
-        "spread_angle": 0.5,
+        "spread_angle": 0.3,
         "cooldown": 1.5,
     }
 }
@@ -752,6 +761,12 @@ def continue_after_dialogue():
             y = r.randint(-1500, 1500)
             enemies.append({"x": x, "y": y, "hp": 1})
 
+def end_after_boss():
+    if wave_count > 40 and boss_active == False:
+        victory_screen()
+    else:
+        pass
+
 # baguette collision
 
 def check_collision(baguette, enemy):
@@ -810,44 +825,76 @@ def show_fps(x):
 # ----------- LOADING - SPLASH SCREEN ----------- #
 splash_running = True
 while splash_running:
-        for event in pg.event.get():
-            if event.type == pg.QUIT:
-                pg.quit()
-                sys.exit()
-            elif event.type == TRACK_END:
-                play_next()
-            elif event.type == pg.VIDEORESIZE:
-                screen_width, screen_height = event.w, event.h
-                screen = pg.display.set_mode((screen_width, screen_height), pg.RESIZABLE)
+    for event in pg.event.get():
+        if event.type == pg.QUIT:
+            pg.quit()
+            sys.exit()
+        elif event.type == TRACK_END:
+            play_next()
+        elif event.type == pg.VIDEORESIZE:
+            screen_width, screen_height = event.w, event.h
+            screen = pg.display.set_mode((screen_width, screen_height), pg.RESIZABLE)
 
-        # load splash
-        splash = pg.image.load("data/splash.png").convert_alpha()
-        splash = pg.transform.scale(splash, (VIRTUAL_WIDTH, VIRTUAL_HEIGHT))
+    # load splash
+    splash = pg.image.load("data/splash.png").convert_alpha()
+    splash = pg.transform.scale(splash, (VIRTUAL_WIDTH, VIRTUAL_HEIGHT))
 
-        # fade in
-        for alpha in range(0, 256, 5):
-            splash.set_alpha(alpha)
-            virtual_surface.fill((0, 0, 0))  # black bg
-            virtual_surface.blit(splash, (0, 0))
-            scaled = pg.transform.scale(virtual_surface, (screen_width, screen_height))
-            screen.blit(scaled, (0, 0))
-            pg.display.flip()
-            clock.tick(30)
 
-        # 2 second hold
-        t.sleep(2)
+    # prepare splash text
+    font = pg.font.Font(None, 200)
+    text_trip = font.render("Trip", True, neruyellow).convert_alpha()
+    text_leNe = font.render("le Ne", True, mikublue).convert_alpha()
+    text_wgen = font.render("wgen", True, tetored).convert_alpha()
 
-        # fade out
-        for alpha in range(255, -1, -5):
-            splash.set_alpha(alpha)
-            virtual_surface.fill((0, 0, 0))
-            virtual_surface.blit(splash, (0, 0))
-            scaled = pg.transform.scale(virtual_surface, (screen_width, screen_height))
-            screen.blit(scaled, (0, 0))
-            pg.display.flip()
-            clock.tick(30)
-        
-        splash_running = False
+    # calculate total width and starting x position
+    total_width = text_trip.get_width() + text_leNe.get_width() + text_wgen.get_width()
+    start_x = VIRTUAL_WIDTH // 2 - total_width // 2
+    text_y = VIRTUAL_HEIGHT // 2 + 200
+
+
+
+    # fade in
+    for alpha in range(0, 256, 5):
+        splash.set_alpha(alpha)
+        text_trip.set_alpha(alpha)
+        text_leNe.set_alpha(alpha)
+        text_wgen.set_alpha(alpha)
+
+        virtual_surface.fill((0, 0, 0))
+        virtual_surface.blit(splash, (0, 0))
+        virtual_surface.blit(text_trip, (start_x, text_y))
+        virtual_surface.blit(text_leNe, (start_x + text_trip.get_width(), text_y))
+        virtual_surface.blit(text_wgen, (start_x + text_trip.get_width() + text_leNe.get_width(), text_y))
+
+        scaled = pg.transform.scale(virtual_surface, (screen_width, screen_height))
+        screen.blit(scaled, (0, 0))
+        pg.display.flip()
+        clock.tick(30)
+
+    # 2 second hold
+    t.sleep(2)
+
+    # fade out
+    for alpha in range(255, -1, -5):
+        splash.set_alpha(alpha)
+        text_trip.set_alpha(alpha)
+        text_leNe.set_alpha(alpha)
+        text_wgen.set_alpha(alpha)
+
+        virtual_surface.fill((0, 0, 0))
+        virtual_surface.blit(splash, (0, 0))
+        virtual_surface.blit(text_trip, (start_x, text_y))
+        virtual_surface.blit(text_leNe, (start_x + text_trip.get_width(), text_y))
+        virtual_surface.blit(text_wgen, (start_x + text_trip.get_width() + text_leNe.get_width(), text_y))
+
+        scaled = pg.transform.scale(virtual_surface, (screen_width, screen_height))
+        screen.blit(scaled, (0, 0))
+        pg.display.flip()
+        clock.tick(30)
+
+
+    splash_running = False
+
 
 
 
@@ -983,15 +1030,17 @@ while running:
         draw_boss()
         check_boss_collision(baguette)
         check_boss_player_collision()
+    elif boss_data["hp"] <= 0:
+        end_after_boss()
 
 
     # display player stats
     font = pg.font.Font(None, 50)
-    hp_text = font.render(f"HP: {player_hp}", True, white)
-    score_text = font.render(f"Score: {score}", True, white)
-    wave_text = font.render(f"Wave: {wave_count}", True, white)
-    fps_text = font.render(f"FPS: {fps_count}", True, white)
-    weapon_text = font.render(f"Weapon: {current_weapon.upper()}", True, white)
+    hp_text = font.render(f"HP: {player_hp}", True, white).convert_alpha()
+    score_text = font.render(f"Score: {score}", True, white).convert_alpha()
+    wave_text = font.render(f"Wave: {wave_count}", True, white).convert_alpha()
+    fps_text = font.render(f"FPS: {fps_count}", True, white).convert_alpha()
+    weapon_text = font.render(f"Weapon: {current_weapon.upper()}", True, white).convert_alpha()
     virtual_surface.blit(hp_text, (10, 10))
     virtual_surface.blit(score_text, (10, 60))
     virtual_surface.blit(wave_text, (10, 110))
@@ -1005,9 +1054,7 @@ while running:
     screen.blit(scaled_surface, (0, 0))
     pg.display.flip()
 
-    if wave_count > 40:
-        player_hp = 1000
-        victory_screen()
+
 
 
 pg.quit()
