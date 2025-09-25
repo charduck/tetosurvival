@@ -98,6 +98,9 @@ def play_next():
 teto_image = pg.image.load("data/teto.webp").convert_alpha()
 miku_image = pg.image.load("data/miku.webp").convert_alpha()
 neru_image = pg.image.load("data/neru.webp").convert_alpha()
+defoko_image = pg.image.load("data/defoko.png").convert_alpha()
+momone_image = pg.image.load("data/momone.png").convert_alpha()
+diva_image = pg.image.load("data/diva.png").convert_alpha()
 baguette_image = pg.image.load("data/baguette.webp").convert_alpha()
 
 # scale images for menu
@@ -145,7 +148,7 @@ story_dialogue = {
         "Neru: \"Teto! Can you hear me?\"",
         "Neru: \"I don't know what happened, but...\"",
         "Neru: \"Miku went crazy! Have you seen her?\"",
-        "Miku: \"...\""
+        "Diva: \"...\""
     ],
     10: [
         "Neru: \"Teto!!\"",
@@ -154,8 +157,8 @@ story_dialogue = {
         "Neru: \"Stay safe!\""
     ],
     15: [
-        "Teto: \"The baguette launcher works great!\"",
-        "Teto: \"But there are so many enemies...\""
+        "Momo: \"Teto! Teto! Are you ok?\"",
+        "Defoko: \"We're still here, Teto!\""
     ],
     20: [
         "Miku: \"...\"",
@@ -163,21 +166,23 @@ story_dialogue = {
         "Miku: \"...\""
     ],
     25: [
-        "Teto: \"I feel like something big is coming...\"",
-        "Teto: \"The air feels different.\""
+        "Teto: \"What is that feeling?\"",
+        "Teto: \"I think something's watching me...\""
     ],
     30: [
-        "Neru: \"Teto! I'm sensing a powerful enemy!\"",
-        "Neru: \"Be ready for anything!\""
+        "Neru: \"Teto! There's another miku!\"",
+        "Diva: \"...\"",
+        "Defoko: \"But... it looks different! More... malevolent.\""
     ],
     35: [
-        "Teto: \"The tension is building...\"",
-        "Teto: \"I can feel something massive approaching.\""
+        "Teto: \"What is this?\"",
+        "Teto: \"The air feels... suffocating.\""
     ],
     40: [
         "Miku: \"...\"",
-        "Miku: \"...\"",
-        "Miku: \"...\"",
+        "Neru: \"...\"",
+        "Momo: \"...\"",
+        "Defoko: \"...\"",
         "Teto: \"!!!\""
     ]
 }
@@ -204,7 +209,7 @@ weapon_stats = {
     },
     WEAPON_SHOTGUN: {
         "projectile_count": 5,
-        "spread_angle": 1,
+        "spread_angle": 0.5,
         "cooldown": 1.5,
     }
 }
@@ -287,6 +292,10 @@ def start_story_sequence(wave):
             current_npc_sprite = miku_image
         elif "Neru:" in dialogue:
             current_npc_sprite = neru_image
+        elif "Momo:" in dialogue:
+            current_npc_sprite = momone_image
+        elif "Defoko:" in dialogue:
+            current_npc_sprite = defoko_image
         else:
             current_npc_sprite = neru_image
 
@@ -316,6 +325,12 @@ def handle_dialogue_click():
             current_npc_sprite = miku_image
         elif "Neru:" in dialogue:
             current_npc_sprite = neru_image
+        elif "Momo:" in dialogue:
+            current_npc_sprite = momone_image
+        elif "Defoko:" in dialogue:
+            current_npc_sprite = defoko_image
+        elif "Diva:" in dialogue:
+            current_npc_sprite = diva_image
         
         return False  # More dialogue to show
 
@@ -464,7 +479,7 @@ def draw_boss():
         return
     
     # Draw boss (scaled up miku sprite)
-    boss_sprite = pg.transform.scale(miku_image, (boss_data["size"], boss_data["size"]))
+    boss_sprite = pg.transform.scale(diva_image, (boss_data["size"], boss_data["size"]))
     boss_x = boss_data["x"] + map_offset_x
     boss_y = boss_data["y"] + map_offset_y
     virtual_surface.blit(boss_sprite, (boss_x, boss_y))
@@ -488,7 +503,7 @@ def draw_boss():
     
     # Boss name
     font = pg.font.Font(None, 36)
-    boss_text = font.render("MEGA MIKU", True, white)
+    boss_text = font.render("DIVA MIKU", True, white)
     text_x = (VIRTUAL_WIDTH - boss_text.get_width()) // 2
     virtual_surface.blit(boss_text, (text_x, bar_y - 30))
 
@@ -498,10 +513,15 @@ def check_boss_collision(projectile):
     if not boss_active or not boss_data:
         return False
     
-    proj_rect = pg.Rect(projectile["x"] - 40, projectile["y"] - 40, 80, 80)
+    proj_rect = pg.Rect(
+        projectile["x"] + map_offset_x - 40,
+        projectile["y"] + map_offset_y - 40, 
+        80, 
+        80
+        )
     boss_rect = pg.Rect(
-        boss_data["x"] + map_offset_x, 
-        boss_data["y"] + map_offset_y, 
+        boss_data["x"],
+        boss_data["y"],
         boss_data["size"], 
         boss_data["size"]
     )
@@ -753,11 +773,29 @@ def death_screen():
     wave_text = font.render(f"Waves Survived: {wave_count}", True, white)
 
     virtual_surface.fill(black)
-    scaled = pg.transform.scale(virtual_surface, (screen_width, screen_height))
-    screen.blit(scaled, (0, 0))
     virtual_surface.blit(death_text, (VIRTUAL_WIDTH // 2 - death_text.get_width() // 2, VIRTUAL_HEIGHT // 2 - 100))
     virtual_surface.blit(score_text, (VIRTUAL_WIDTH // 2 - score_text.get_width() // 2, VIRTUAL_HEIGHT // 2))
     virtual_surface.blit(wave_text, (VIRTUAL_WIDTH // 2 - wave_text.get_width() // 2, VIRTUAL_HEIGHT // 2 + 100))
+    scaled = pg.transform.scale(virtual_surface, (screen_width, screen_height))
+    screen.blit(scaled, (0, 0))
+
+    pg.display.flip()
+    t.sleep(3)
+    pg.quit()
+    sys.exit()
+
+def victory_screen():
+    font = pg.font.Font(None, 100)
+    win_text = font.render("Teto Survived the Diva Attack!", True, green)
+    score_text = font.render(f"Final Score: {score}", True, white)
+    wave_text = font.render(f"Waves Survived: {wave_count}", True, white)
+
+    virtual_surface.fill(black)
+    virtual_surface.blit(win_text, (VIRTUAL_WIDTH // 2 - win_text.get_width() // 2, VIRTUAL_HEIGHT // 2 - 100))
+    virtual_surface.blit(score_text, (VIRTUAL_WIDTH // 2 - score_text.get_width() // 2, VIRTUAL_HEIGHT // 2))
+    virtual_surface.blit(wave_text, (VIRTUAL_WIDTH // 2 - wave_text.get_width() // 2, VIRTUAL_HEIGHT // 2 + 100))
+    scaled = pg.transform.scale(virtual_surface, (screen_width, screen_height))
+    screen.blit(scaled, (0, 0))
 
     pg.display.flip()
     t.sleep(3)
@@ -940,6 +978,13 @@ while running:
     # draw player
     virtual_surface.blit(teto_image, (player_x, player_y))
 
+    if boss_active:
+        update_boss()
+        draw_boss()
+        check_boss_collision(baguette)
+        check_boss_player_collision()
+
+
     # display player stats
     font = pg.font.Font(None, 50)
     hp_text = font.render(f"HP: {player_hp}", True, white)
@@ -959,6 +1004,10 @@ while running:
     scaled_surface = pg.transform.scale(virtual_surface, (screen_width, screen_height))
     screen.blit(scaled_surface, (0, 0))
     pg.display.flip()
+
+    if wave_count > 40:
+        player_hp = 1000
+        victory_screen()
 
 
 pg.quit()
