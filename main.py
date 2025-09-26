@@ -48,8 +48,8 @@ settings = load_settings()
 screen = pg.display.set_mode((screen_width, screen_height), pg.RESIZABLE)
 running = True
 
-VIRTUAL_WIDTH = 1280
-VIRTUAL_HEIGHT = 720
+VIRTUAL_WIDTH = screen_width
+VIRTUAL_HEIGHT = screen_height
 virtual_surface = pg.Surface((VIRTUAL_WIDTH, VIRTUAL_HEIGHT))
 
 
@@ -102,6 +102,20 @@ def play_next():
 # ----------- LOADING ASSETS ----------- #
 
 # sprites loading
+
+def load_sprite(imgname, filetype):
+    sprite = pg.image.load("data/" + imgname + "." + filetype).convert_alpha()
+    return sprite
+
+teto_image = load_sprite("teto", "webp")
+miku_image = load_sprite("miku", "webp")
+neru_image = load_sprite("neru", "webp")
+defoko_image = load_sprite("defoko", "png")
+momone_image = load_sprite("momone", "png")
+diva_image = load_sprite("diva", "png")
+baguette_image = load_sprite("baguette", "webp")
+
+""" # old img load
 teto_image = pg.image.load("data/teto.webp").convert_alpha()
 miku_image = pg.image.load("data/miku.webp").convert_alpha()
 neru_image = pg.image.load("data/neru.webp").convert_alpha()
@@ -109,6 +123,7 @@ defoko_image = pg.image.load("data/defoko.png").convert_alpha()
 momone_image = pg.image.load("data/momone.png").convert_alpha()
 diva_image = pg.image.load("data/diva.png").convert_alpha()
 baguette_image = pg.image.load("data/baguette.webp").convert_alpha()
+"""
 
 # scale images for menu
 miku_image_menu = pg.transform.scale(miku_image, (150, 150))
@@ -135,10 +150,21 @@ red = (195, 101, 110)
 tetored = (255,0,69)
 yellow = (181, 195, 101)
 neruyellow = (213, 157, 36)
+
+
 # random colour selector
 a = r.randint(1, 255)
 b = r.randint(1, 255)
 c = r.randint(1, 255)
+
+def complementary(x):
+    highest = 255
+    result = highest - x
+    return result
+
+a2 = complementary(a)
+b2 = complementary(b)
+c2 = complementary(c)
 
 
 # ----------- STORY AND DIALOGUE SYSTEM ----------- #
@@ -470,14 +496,14 @@ def spawn_boss():
     boss_data = {
         "x": r.randint(-1000, 1000),
         "y": r.randint(-1000, 1000),
-        "hp": 10,
-        "max_hp": 10,
+        "hp": 50,
+        "max_hp": 50,
         "size": 120,  # Larger than normal enemies
         "speed": enemy_speed * 0.7,  # Slower but tankier
         "last_attack_time": 0,
         "attack_cooldown": 3.0,
         "last_player_hit_time": 0,
-        "player_hit_cooldown": 1.0
+        "player_hit_cooldown": 2.0
     }
 
 def update_boss():
@@ -975,7 +1001,7 @@ while running:
         if keys[pg.K_s]:
             map_offset_y -= player_speed
 
-    virtual_surface.fill(blue)  # screen bg
+    virtual_surface.fill((a2, b2, c2))  # screen bg -- complementary colours to abc
 
     # draw map
     for obj in map_objects:
@@ -1027,10 +1053,7 @@ while running:
                     thrown_baguettes.remove(baguette)
                 score += 2
 
-        if check_boss_collision(baguette) == True:
-            if baguette in thrown_baguettes:
-                thrown_baguettes.remove(baguette)
-            score += 10
+        
 
     if not story_active:
         for enemy in enemies[:]:
@@ -1064,11 +1087,19 @@ while running:
     if boss_active:
         update_boss()
         draw_boss()
+        print("Active")
         if check_boss_player_collision():
             current_time = t.time()
             if current_time - boss_data["last_player_hit_time"] >= boss_data["player_hit_cooldown"]:
                 boss_data["last_player_hit_time"] = current_time
                 player_hp -= 20
+                if player_hp <= 0:
+                    death_screen()
+        if check_boss_collision(baguette) == True:
+            print("Hit")
+            if baguette in thrown_baguettes:
+                thrown_baguettes.remove(baguette)
+            score += 10
 
     end_after_boss()
 
