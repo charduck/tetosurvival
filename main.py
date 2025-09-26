@@ -115,16 +115,6 @@ momone_image = load_sprite("momone", "png")
 diva_image = load_sprite("diva", "png")
 baguette_image = load_sprite("baguette", "webp")
 
-""" # old img load
-teto_image = pg.image.load("data/teto.webp").convert_alpha()
-miku_image = pg.image.load("data/miku.webp").convert_alpha()
-neru_image = pg.image.load("data/neru.webp").convert_alpha()
-defoko_image = pg.image.load("data/defoko.png").convert_alpha()
-momone_image = pg.image.load("data/momone.png").convert_alpha()
-diva_image = pg.image.load("data/diva.png").convert_alpha()
-baguette_image = pg.image.load("data/baguette.webp").convert_alpha()
-"""
-
 # scale images for menu
 miku_image_menu = pg.transform.scale(miku_image, (150, 150))
 teto_image_menu = pg.transform.scale(teto_image, (150, 150))
@@ -238,6 +228,7 @@ story_dialogue = {
     40: [
         "Diva: *heavy breathing*",
         "Teto: \"!!!\""
+        "Diva: \"die...\""
     ]
 }
 
@@ -281,6 +272,7 @@ player_x = VIRTUAL_WIDTH // 2 - player_size // 2
 player_y = VIRTUAL_HEIGHT // 2 - player_size // 2
 player_speed = 2
 player_hp = 100
+player_max_hp = 100
 
 
 # baguette settings
@@ -294,7 +286,7 @@ throw_cooldown = 1
 # game variables
 enemies = []
 thrown_baguettes = []
-wave_count = 38
+wave_count = 0
 score = 0
 
 # enemy settings
@@ -496,12 +488,12 @@ def spawn_boss():
     boss_data = {
         "x": r.randint(-1000, 1000),
         "y": r.randint(-1000, 1000),
-        "hp": 50,
-        "max_hp": 50,
+        "hp": 100,
+        "max_hp": 100,
         "size": 120,  # Larger than normal enemies
-        "speed": enemy_speed * 0.7,  # Slower but tankier
+        "speed": enemy_speed * 0.8,  # Slower but tankier
         "last_attack_time": 0,
-        "attack_cooldown": 3.0,
+        "attack_cooldown": 4.0,
         "last_player_hit_time": 0,
         "player_hit_cooldown": 2.0
     }
@@ -572,8 +564,8 @@ def check_boss_collision(projectile):
         return False
     
     proj_rect = pg.Rect(
-        projectile["x"] + map_offset_x - 40,
-        projectile["y"] + map_offset_y - 40, 
+        projectile["x"] - 40,
+        projectile["y"] - 40, 
         80, 
         80
         )
@@ -1052,6 +1044,12 @@ while running:
                 if baguette in thrown_baguettes:  # is baguette still in list?
                     thrown_baguettes.remove(baguette)
                 score += 2
+                break  # Exit since baguette is removed
+        
+        # check for baguette collision with boss (only if still in list and boss active)
+        if baguette in thrown_baguettes and boss_active and check_boss_collision(baguette):
+            thrown_baguettes.remove(baguette)
+            score += 10
 
         
 
@@ -1087,7 +1085,7 @@ while running:
     if boss_active:
         update_boss()
         draw_boss()
-        print("Active")
+
         if check_boss_player_collision():
             current_time = t.time()
             if current_time - boss_data["last_player_hit_time"] >= boss_data["player_hit_cooldown"]:
@@ -1095,24 +1093,39 @@ while running:
                 player_hp -= 20
                 if player_hp <= 0:
                     death_screen()
-        if check_boss_collision(baguette) == True:
-            print("Hit")
-            if baguette in thrown_baguettes:
-                thrown_baguettes.remove(baguette)
-            score += 10
+
+
 
     end_after_boss()
 
 
     # display player stats
     font = pg.font.Font(None, 50)
-    hp_text = font.render(f"HP: {player_hp}", True, white).convert_alpha()
-    score_text = font.render(f"Score: {score}", True, white).convert_alpha()
+    # Draw player health bar
+    health_bar_width = 200
+    health_bar_height = 20
+    health_bar_x = 10
+    health_bar_y = 10
+    
+    # Background (red)
+    pg.draw.rect(virtual_surface, red, (health_bar_x, health_bar_y, health_bar_width, health_bar_height))
+    
+    # Health (green)
+    health_ratio = player_hp / player_max_hp
+    health_width = int(health_bar_width * health_ratio)
+    pg.draw.rect(virtual_surface, green, (health_bar_x, health_bar_y, health_width, health_bar_height))
+    
+    # Border (white)
+    pg.draw.rect(virtual_surface, white, (health_bar_x, health_bar_y, health_bar_width, health_bar_height), 2)
+    
+    # HP label
+    hp_label = font.render("HP", True, white).convert_alpha()
+    virtual_surface.blit(hp_label, (health_bar_x + health_bar_width + 10, health_bar_y - 5))
+    
     wave_text = font.render(f"Wave: {wave_count}", True, white).convert_alpha()
     fps_text = font.render(f"FPS: {fps_count}", True, white).convert_alpha()
     weapon_text = font.render(f"Weapon: {current_weapon.upper()}", True, white).convert_alpha()
-    virtual_surface.blit(hp_text, (10, 10))
-    virtual_surface.blit(score_text, (10, 60))
+
     virtual_surface.blit(wave_text, (10, 110))
     virtual_surface.blit(fps_text, (10, 160))
     if weapon_unlocked_shotgun == False:
